@@ -3,10 +3,8 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../models/auth');
 const jwt = require('jsonwebtoken');
-const fs = require('fs');
-const checkIfAuthenticated = require('../helper/checkToken');
-
-const RSA_PRIVATE_KEY = fs.readFileSync('./private.key');
+const RSA_PRIVATE_KEY = require('../helper/getPrivateKey');
+const expiresIn = 172800;
 
 router.route('/login').post((req, res, next) => {
     let acc = {
@@ -15,18 +13,16 @@ router.route('/login').post((req, res, next) => {
     }
     auth.getAccount(acc, (err, verifiedAcc)=> {
         if(err) {
-            res.json({success:false, message: `Failed to login. Error: ${err}`});
+            res.json({success:false, message: 'Failed to login. Error:' + err.message, error_code: err.code});
         }
         else {
             if(verifiedAcc.length > 0) {
-				let expiresIn = 172800;
 				jwt.sign({ email: verifiedAcc[0].email }, RSA_PRIVATE_KEY, { 
 					algorithm: 'RS256',
 					expiresIn: expiresIn,
 					subject: verifiedAcc[0]._id.toString() 
 				}, function(err, token) {
-
-					res.json({success: true, verifiedAcc:verifiedAcc, token: token, expiresIn: expiresIn});
+					res.json({success: true, verifiedAcc:verifiedAcc[0], token: token, expiresIn: expiresIn});
 					res.end();
 				});
             } else {
@@ -36,9 +32,9 @@ router.route('/login').post((req, res, next) => {
     });
 });
 
-//POST HTTP method to /bucketlist
+//POST HTTP method to /register
 
-router.route('/register').post(checkIfAuthenticated, (req, res, next) => {
+router.route('/register').post((req, res, next) => {
     let newAcc = new auth({
         username: req.body.username,
         email: req.body.email,
@@ -46,10 +42,22 @@ router.route('/register').post(checkIfAuthenticated, (req, res, next) => {
     });
     auth.register(newAcc,(err, acc) => {
         if(err) {
-            res.json({success: false, message: `Failed to create a new acc. Error: ${err}`});
+            res.json({success: false, message: 'Failed to create a new acc. Error:' + err.message, error_code: err.code});
         }
-        else
-            res.json({success:true, message: "Added successfully."});
+        else {
+			if(Object.keys(acc).length > 0) {
+				jwt.sign({ email: acc['email'] }, RSA_PRIVATE_KEY, { 
+					algorithm: 'RS256',
+					expiresIn: expiresIn,
+					subject: acc['_id'].toString() 
+				}, function(err, token) {
+					res.json({success: true, verifiedAcc:acc, token: token, expiresIn: expiresIn});
+					res.end();
+				});
+            } else {
+                res.json({success:false, message: `Failed to create a new acc.`});
+            }
+		}
     });
 
 });

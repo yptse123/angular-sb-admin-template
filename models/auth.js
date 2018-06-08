@@ -4,11 +4,13 @@ const mongoose = require('mongoose');
 //Define BucketlistSchema with title, description and category
 const AuthSchema = mongoose.Schema({
     username: {
-        type: String,
+		type: String,
+		unique: true,
         required: true
     },
     email: {
-        type: String,
+		type: String,
+		unique: true,
         required: true
     },
     password: {

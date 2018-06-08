@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 
 const config = require('./config/database');
 const auth = require('./controllers/auth');
+const message = require('./controllers/message');
 
 //Connect mongoose to our database
 mongoose.connect(config.database);
@@ -36,8 +37,9 @@ app.get('/', (req,res) => {
     res.send("Invalid page");
 })
 
-//Routing all HTTP requests to /bucketlist to bucketlist controller
+//Routing all HTTP requests to /auth to auth controller
 app.use('/auth', auth);
+app.use('/message', message);
 
 //Listen to port 3000
 app.listen(port, () => {
